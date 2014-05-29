@@ -385,8 +385,6 @@ public class MTextView extends TextView
 				LINE line = contentList.get(i);
 			 sb.append(line.toString());   
 			}
-			if(measuredData.size() > 200)
-				measuredData.clear();
 			return md.measuredHeight;
 		}
 		else
