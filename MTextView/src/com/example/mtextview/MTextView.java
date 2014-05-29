@@ -22,7 +22,6 @@ import android.widget.TextView;
  * @author huangwei
  * @2014年5月27日
  * @下午5:29:27
- * @version SocialClient 1.2.0
  */
 public class MTextView extends TextView
 {
@@ -72,7 +71,9 @@ public class MTextView extends TextView
     private static int hashIndex = 0;
     
 	private CharSequence text = "";
-	
+	/**
+	 * 最小高度
+	 */
 	private int minHeight;
 	/**
 	 * 用以获取屏幕高宽
@@ -120,6 +121,7 @@ public class MTextView extends TextView
 			super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 			return;
 		}
+		
 		int width = 0, height = 0;
 
 		int widthMode = MeasureSpec.getMode(widthMeasureSpec);
@@ -136,7 +138,6 @@ public class MTextView extends TextView
 			width = widthSize;
 			break;
 		case MeasureSpec.UNSPECIFIED:
-			
 			((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 			width = displayMetrics.widthPixels;
 			break;
@@ -526,7 +527,6 @@ public class MTextView extends TextView
      * @author huangwei
      * @2014年5月27日
      * @下午5:21:37
-     * @version SocialClient 1.2.0
      */
 	class IS
 	{
@@ -539,7 +539,6 @@ public class MTextView extends TextView
      * @author huangwei
      * @2014年5月27日
      * @下午5:22:12
-     * @version SocialClient 1.2.0
      */
 	class LINE
 	{
@@ -564,7 +563,6 @@ public class MTextView extends TextView
      * @author huangwei
      * @2014年5月27日
      * @下午5:22:25
-     * @version SocialClient 1.2.0
      */
 	class MeasuredData
 	{
