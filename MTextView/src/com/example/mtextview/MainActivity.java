@@ -35,8 +35,10 @@ public class MainActivity extends Activity
 		SpannableString ss = new SpannableString(source);
 		
 		
-		for(int i=0;i<source.length()-2;i+=5)
+		int plus = 1;
+		for(int i=0;i<source.length()-2;i+=plus)
 		{
+			plus = (int) (Math.random()*5);
 			ImageSpan is = new ImageSpan(MainActivity.this,R.drawable.emoji_29);
 			ss.setSpan(is,i,i+1,0);
 		}
@@ -54,9 +56,10 @@ public class MainActivity extends Activity
 		String source = "撒反对飞王瑞芳芳vfxdsdf司法所我日 35忍32534太 地方个的服务 34个的服务 34太过分的电饭锅电饭锅打三国杀个的服务 34太过分的电饭锅电饭锅打三国杀太过分的电饭锅电饭锅打三国杀水电费歌曲筒袜上课5乳房炎啊啊。";
 		SpannableString ss = new SpannableString(source);
 		
-		
-		for(int i=0;i<source.length()-2;i+=5)
+		int plus = 1;
+		for(int i=0;i<source.length()-2;i+=plus)
 		{
+			plus = (int) (Math.random()*5);
 			ImageSpan is = new ImageSpan(MainActivity.this,R.drawable.emoji_29);
 			ss.setSpan(is,i,i+1,0);
 		}
