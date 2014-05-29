@@ -56,7 +56,7 @@ public class MTextView extends TextView
      */
 	private ArrayList<Object> obList = new ArrayList<Object>();
     /**
-     * 是否使用默认{@link #onMeasure(int, int)}和{@link #onDraw(Canvas)}
+     * 是否使用默认{@link TextView#onMeasure(int, int)}和{@link TextView#onDraw(Canvas)}
      */
 	private boolean useDefault = false;
     /**
