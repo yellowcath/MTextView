@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.SpannableString;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ImageSpan;
 import android.widget.TextView;
 
@@ -42,6 +43,8 @@ public class MainActivity extends Activity
 			ImageSpan is = new ImageSpan(MainActivity.this,R.drawable.emoji_29);
 			ss.setSpan(is,i,i+1,0);
 		}
+		BackgroundColorSpan span = new BackgroundColorSpan(Color.YELLOW);
+		ss.setSpan(span,10,20,SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
 		mTextView.setMText(ss);
 		mTextView.setTextSize(15);
 		mTextView.setTextColor(Color.BLACK);
@@ -63,6 +66,8 @@ public class MainActivity extends Activity
 			ImageSpan is = new ImageSpan(MainActivity.this,R.drawable.emoji_29);
 			ss.setSpan(is,i,i+1,0);
 		}
+		BackgroundColorSpan span = new BackgroundColorSpan(Color.YELLOW);
+		ss.setSpan(span,10,20,SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
 		textView.setText(ss);
 		textView.setTextSize(15);
 		textView.setTextColor(Color.BLACK);
