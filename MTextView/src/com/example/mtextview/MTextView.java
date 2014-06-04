@@ -322,6 +322,8 @@ public class MTextView extends TextView
 		int rightPadding = getCompoundPaddingRight();
 
 		float drawedWidth = 0;
+		
+		boolean splitFlag = false;//BackgroundColorSpan拆分用
 
 		width = width - leftPadding - rightPadding;
 
@@ -354,17 +356,50 @@ public class MTextView extends TextView
 					if (obHeight > lineHeight)
 						lineHeight = obHeight;
 				}
-				//BackGroudColorSpan照字符串处理即可
-				else //做字符串处理
+				else if(span instanceof BackgroundColorSpan)
 				{
-					obWidth = paint.measureText(((SpanObject) ob).source.toString());
+					String str = ((SpanObject) ob).source.toString();
+					obWidth = paint.measureText(str);
+					obHeight = textSize;
+					
+					//如果太长,拆分
+					int k= str.length()-1;
+					while(width - drawedWidth < obWidth)
+					{
+						obWidth = paint.measureText(str.substring(0,k--));
+					}
+					if(k < str.length()-1)
+					{
+						splitFlag = true;
+						SpanObject so1 = new SpanObject();
+						so1.start = ((SpanObject) ob).start;
+						so1.end = so1.start + k;
+						so1.source = str.substring(0,k+1);
+						so1.span = ((SpanObject) ob).span;
+						
+						SpanObject so2 = new SpanObject();
+						so2.start =  so1.end;
+						so2.end = ((SpanObject) ob).end;
+						so2.source = str.substring(k+1,str.length());
+						so2.span = ((SpanObject) ob).span;
+						
+						ob = so1;
+						obList.set(i,so2);
+						i--;
+					}
+				}//做字符串处理
+				else
+				{
+					String str = ((SpanObject) ob).source.toString();
+					obWidth = paint.measureText(str);
 					obHeight = textSize;
 				}
 			}
 
 			//这一行满了，存入contentList,新起一行
-			if (width - drawedWidth < obWidth)
+			if (width - drawedWidth < obWidth || splitFlag)
 			{
+				splitFlag = false;
 				contentList.add(line);
 
 				if (drawedWidth > lineWidthMax)
