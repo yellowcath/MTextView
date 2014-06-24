@@ -11,6 +11,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Paint.FontMetrics;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -51,7 +52,7 @@ public class MTextView extends TextView
 	private int textColor = Color.BLACK;
 	//行距
 	private float lineSpacing;
-	private int lineSpacingDP = 2;
+	private int lineSpacingDP = 5;
 	/**
 	 * 最大宽度
 	 */
@@ -98,9 +99,10 @@ public class MTextView extends TextView
 
 		displayMetrics = new DisplayMetrics();
 	}
-	public MTextView(Context context, AttributeSet attrs)
+	
+	public MTextView(Context context,AttributeSet attrs)
 	{
-		super(context, attrs);
+		super(context,attrs);
 		this.context = context;
 		paint.setAntiAlias(true);
 		lineSpacing = dip2px(context, lineSpacingDP);
@@ -242,7 +244,7 @@ public class MTextView extends TextView
 
 				if (ob instanceof String)
 				{
-					canvas.drawText((String) ob, realDrawedWidth, height + aContentList.height, paint);
+					canvas.drawText((String) ob, realDrawedWidth, height + aContentList.height - paint.getFontMetrics().descent, paint);
 					realDrawedWidth += width;
 				}
 				else if (ob instanceof SpanObject)
@@ -267,16 +269,17 @@ public class MTextView extends TextView
 						textBgColorPaint.setColor(((BackgroundColorSpan) span).getBackgroundColor());
 						textBgColorPaint.setStyle(Style.FILL);
 						textBgColorRect.left = (int) realDrawedWidth;
-						textBgColorRect.top = (int) (height - lineSpacing);
+						int textHeight = (int) getTextSize();
+						textBgColorRect.top = (int) (height + aContentList.height - textHeight - paint.getFontMetrics().descent);
 						textBgColorRect.right = textBgColorRect.left+width;
-						textBgColorRect.bottom = (int) (height + aContentList.height + lineSpacing*2);
+						textBgColorRect.bottom = (int) (height + aContentList.height + lineSpacing  - paint.getFontMetrics().descent);
     					canvas.drawRect(textBgColorRect, textBgColorPaint);
-						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height, paint);
+						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height - paint.getFontMetrics().descent, paint);
 						realDrawedWidth += width;
 					}
 					else//做字符串处理
 					{
-						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height, paint);
+						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height - paint.getFontMetrics().descent, paint);
 						realDrawedWidth += width;
 					}
 				}
@@ -313,8 +316,9 @@ public class MTextView extends TextView
 		float obHeight = 0;
 
 		float textSize = this.getTextSize();
+		FontMetrics fontMetrics = paint.getFontMetrics();
 		//行高
-		float lineHeight = textSize;
+		float lineHeight = fontMetrics.bottom - fontMetrics.top;
 		//计算出的所需高度
 		float height = lineSpacing;
 
@@ -615,7 +619,23 @@ public class MTextView extends TextView
 			this.setTextColor(textColor);
 		}
 	}
-
+    /**
+     * 设置行距
+     * @param lineSpacingDP 行距，单位dp
+     */
+	public void setLineSpacingDP(int lineSpacingDP)
+	{
+		this.lineSpacingDP = lineSpacingDP;
+		lineSpacing = dip2px(context, lineSpacingDP);
+	}
+	/**
+	 * 获取行距
+	 * @return 行距，单位dp
+	 */
+	public int getLineSpacingDP()
+	{
+		return lineSpacingDP;
+	}
 	/**
 	 * @author huangwei
 	 * @version SocialClient 1.2.0
