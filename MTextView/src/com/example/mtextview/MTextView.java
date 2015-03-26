@@ -15,10 +15,13 @@ import android.graphics.Paint.FontMetrics;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.CharacterStyle;
+import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -26,7 +29,6 @@ import android.widget.TextView;
 
 /**
  * @author huangwei
- * @version SocialClient 1.2.0
  * @功能 图文混排TextView，请使用{@link #setMText(CharSequence)}
  * @2014年5月27日
  * @下午5:29:27
@@ -47,8 +49,16 @@ public class MTextView extends TextView
 	 * 用于测量字符宽度
 	 */
 	private TextPaint paint = new TextPaint();
-	
-//	private float lineSpacingMult = 0.5f;
+	/**
+	 * 用于测量span高度
+	 */
+	private Paint.FontMetricsInt mSpanFmInt = new Paint.FontMetricsInt();
+	/**
+	 * 临时使用,以免在onDraw中反复生产新对象
+	 */
+	private FontMetrics mFontMetrics = new FontMetrics();
+
+	//	private float lineSpacingMult = 0.5f;
 	private int textColor = Color.BLACK;
 	//行距
 	private float lineSpacing;
@@ -70,10 +80,10 @@ public class MTextView extends TextView
 	 */
 	private ArrayList<Object> obList = new ArrayList<Object>();
 	/**
-	 * 是否使用默认{@link #onMeasure(int, int)}和{@link #onDraw(Canvas)}
+	 * 是否使用默认{@link #onMeasure(int, int)}和{@link #onDraw(android.graphics.Canvas)}
 	 */
 	private boolean useDefault = false;
-	private CharSequence text = "";
+	protected CharSequence text = "";
 
 	private int minHeight;
 	/**
@@ -89,9 +99,23 @@ public class MTextView extends TextView
 	 */
 	private Rect textBgColorRect = new Rect();
 
-	public MTextView(Context context)
-	{
+	public MTextView(Context context) {
 		super(context);
+		init(context);
+	}
+
+	public MTextView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		init(context);
+	}
+
+	public MTextView(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+		init(context);
+	}
+
+
+	public void init(Context context) {
 		this.context = context;
 		paint.setAntiAlias(true);
 		lineSpacing = dip2px(context, lineSpacingDP);
@@ -99,20 +123,8 @@ public class MTextView extends TextView
 
 		displayMetrics = new DisplayMetrics();
 	}
-	
-	public MTextView(Context context,AttributeSet attrs)
-	{
-		super(context,attrs);
-		this.context = context;
-		paint.setAntiAlias(true);
-		lineSpacing = dip2px(context, lineSpacingDP);
-		minHeight = dip2px(context, 30);
 
-		displayMetrics = new DisplayMetrics();
-	}
-
-	public static int px2sp(Context context, float pxValue)
-	{
+	public static int px2sp(Context context, float pxValue) {
 		final float fontScale = context.getResources().getDisplayMetrics().scaledDensity;
 		return (int) (pxValue / fontScale + 0.5f);
 	}
@@ -120,31 +132,26 @@ public class MTextView extends TextView
 	/**
 	 * 根据手机的分辨率从 dp 的单位 转成为 px(像素)
 	 */
-	public static int dip2px(Context context, float dpValue)
-	{
+	public static int dip2px(Context context, float dpValue) {
 		final float scale = context.getResources().getDisplayMetrics().density;
 		return (int) (dpValue * scale + 0.5f);
 	}
 
 	@Override
-	public void setMaxWidth(int maxpixels)
-	{
+	public void setMaxWidth(int maxpixels) {
 		super.setMaxWidth(maxpixels);
 		maxWidth = maxpixels;
 	}
 
 	@Override
-	public void setMinHeight(int minHeight)
-	{
+	public void setMinHeight(int minHeight) {
 		super.setMinHeight(minHeight);
 		this.minHeight = minHeight;
 	}
 
 	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
-	{
-		if (useDefault)
-		{
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		if (useDefault) {
 			super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 			return;
 		}
@@ -155,24 +162,24 @@ public class MTextView extends TextView
 		int widthSize = MeasureSpec.getSize(widthMeasureSpec);
 		int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
-		switch (widthMode)
-		{
-		case MeasureSpec.EXACTLY:
-			width = widthSize;
-			break;
-		case MeasureSpec.AT_MOST:
-			width = widthSize;
-			break;
-		case MeasureSpec.UNSPECIFIED:
+		switch (widthMode) {
+			case MeasureSpec.EXACTLY:
+				width = widthSize;
+				break;
+			case MeasureSpec.AT_MOST:
+				width = widthSize;
+				break;
+			case MeasureSpec.UNSPECIFIED:
 
-			((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-			width = displayMetrics.widthPixels;
-			break;
-		default:
-			break;
+				((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+				width = displayMetrics.widthPixels;
+				break;
+			default:
+				break;
 		}
-		if (maxWidth > 0)
+		if (maxWidth > 0) {
 			width = Math.min(width, maxWidth);
+		}
 
 		paint.setTextSize(this.getTextSize());
 		paint.setColor(textColor);
@@ -183,23 +190,21 @@ public class MTextView extends TextView
 		int rightPadding = getCompoundPaddingRight();
 		width = Math.min(width, (int) lineWidthMax + leftPadding + rightPadding);
 
-		if (oneLineWidth > -1)
-		{
+		if (oneLineWidth > -1) {
 			width = oneLineWidth;
 		}
-		switch (heightMode)
-		{
-		case MeasureSpec.EXACTLY:
-			height = heightSize;
-			break;
-		case MeasureSpec.AT_MOST:
-			height = realHeight;
-			break;
-		case MeasureSpec.UNSPECIFIED:
-			height = realHeight;
-			break;
-		default:
-			break;
+		switch (heightMode) {
+			case MeasureSpec.EXACTLY:
+				height = heightSize;
+				break;
+			case MeasureSpec.AT_MOST:
+				height = realHeight;
+				break;
+			case MeasureSpec.UNSPECIFIED:
+				height = realHeight;
+				break;
+			default:
+				break;
 		}
 
 		height += getCompoundPaddingTop() + getCompoundPaddingBottom();
@@ -210,15 +215,14 @@ public class MTextView extends TextView
 	}
 
 	@Override
-	protected void onDraw(Canvas canvas)
-	{
-		if (useDefault)
-		{
+	protected void onDraw(Canvas canvas) {
+		if (useDefault) {
 			super.onDraw(canvas);
 			return;
 		}
-		if (contentList.isEmpty())
+		if (contentList.isEmpty()) {
 			return;
+		}
 		int width;
 
 		Object ob;
@@ -228,58 +232,48 @@ public class MTextView extends TextView
 
 		float height = 0 + topPadding + lineSpacing;
 		//只有一行时
-		if (oneLineWidth != -1)
-		{
+		if (oneLineWidth != -1) {
 			height = getMeasuredHeight() / 2 - contentList.get(0).height / 2;
 		}
 
-		for (LINE aContentList : contentList)
-		{
+		for (LINE aContentList : contentList) {
 			//绘制一行
 			float realDrawedWidth = leftPadding;
-			for (int j = 0; j < aContentList.line.size(); j++)
-			{
+			for (int j = 0; j < aContentList.line.size(); j++) {
 				ob = aContentList.line.get(j);
 				width = aContentList.widthList.get(j);
 
-				if (ob instanceof String)
-				{
-					canvas.drawText((String) ob, realDrawedWidth, height + aContentList.height - paint.getFontMetrics().descent, paint);
+				paint.getFontMetrics(mFontMetrics);
+				float x = realDrawedWidth;
+				float y = height + aContentList.height - paint.getFontMetrics().descent;
+				float top = y - aContentList.height;
+				float bottom = y + mFontMetrics.descent;
+				if (ob instanceof String) {
+					canvas.drawText((String) ob, realDrawedWidth, y, paint);
 					realDrawedWidth += width;
-				}
-				else if (ob instanceof SpanObject)
-				{
+				} else if (ob instanceof SpanObject) {
 					Object span = ((SpanObject) ob).span;
-					if(span instanceof ImageSpan)
-					{
-						ImageSpan is = (ImageSpan) span;
-						Drawable d = is.getDrawable();
-	
-						int left = (int) (realDrawedWidth);
-						int top = (int) height;
-						int right = (int) (realDrawedWidth + width);
-						int bottom = (int) (height + aContentList.height);
-						d.setBounds(left, top, right, bottom);
-						d.draw(canvas);
+					if (span instanceof DynamicDrawableSpan) {
+
+						int start = ((Spannable) text).getSpanStart(span);
+						int end = ((Spannable) text).getSpanEnd(span);
+						((DynamicDrawableSpan) span).draw(canvas, text, start, end, (int) x, (int) top, (int) y, (int) bottom, paint);
 						realDrawedWidth += width;
-					}
-					else if(span instanceof BackgroundColorSpan)
-					{
-						
+					} else if (span instanceof BackgroundColorSpan) {
+
 						textBgColorPaint.setColor(((BackgroundColorSpan) span).getBackgroundColor());
 						textBgColorPaint.setStyle(Style.FILL);
 						textBgColorRect.left = (int) realDrawedWidth;
 						int textHeight = (int) getTextSize();
-						textBgColorRect.top = (int) (height + aContentList.height - textHeight - paint.getFontMetrics().descent);
-						textBgColorRect.right = textBgColorRect.left+width;
-						textBgColorRect.bottom = (int) (height + aContentList.height + lineSpacing  - paint.getFontMetrics().descent);
-    					canvas.drawRect(textBgColorRect, textBgColorPaint);
-						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height - paint.getFontMetrics().descent, paint);
+						textBgColorRect.top = (int) (height + aContentList.height - textHeight - mFontMetrics.descent);
+						textBgColorRect.right = textBgColorRect.left + width;
+						textBgColorRect.bottom = (int) (height + aContentList.height + lineSpacing - mFontMetrics.descent);
+						canvas.drawRect(textBgColorRect, textBgColorPaint);
+						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height - mFontMetrics.descent, paint);
 						realDrawedWidth += width;
-					}
-					else//做字符串处理
+					} else//做字符串处理
 					{
-						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height - paint.getFontMetrics().descent, paint);
+						canvas.drawText(((SpanObject) ob).source.toString(), realDrawedWidth, height + aContentList.height - mFontMetrics.descent, paint);
 						realDrawedWidth += width;
 					}
 				}
@@ -291,23 +285,21 @@ public class MTextView extends TextView
 	}
 
 	@Override
-	public void setTextColor(int color)
-	{
+	public void setTextColor(int color) {
 		super.setTextColor(color);
 		textColor = color;
 	}
 
 	/**
 	 * 用于带ImageSpan的文本内容所占高度测量
+	 *
 	 * @param width 预定的宽度
 	 * @return 所需的高度
 	 */
-	private int measureContentHeight(int width)
-	{
+	private int measureContentHeight(int width) {
 		int cachedHeight = getCachedData(text.toString(), width);
 
-		if (cachedHeight > 0)
-		{
+		if (cachedHeight > 0) {
 			return cachedHeight;
 		}
 
@@ -326,7 +318,7 @@ public class MTextView extends TextView
 		int rightPadding = getCompoundPaddingRight();
 
 		float drawedWidth = 0;
-		
+
 		boolean splitFlag = false;//BackgroundColorSpan拆分用
 
 		width = width - leftPadding - rightPadding;
@@ -339,61 +331,52 @@ public class MTextView extends TextView
 
 		LINE line = new LINE();
 
-		for (int i = 0; i < obList.size(); i++)
-		{
+		for (int i = 0; i < obList.size(); i++) {
 			Object ob = obList.get(i);
 
-			if (ob instanceof String)
-			{
-
+			if (ob instanceof String) {
 				obWidth = paint.measureText((String) ob);
 				obHeight = textSize;
-			}
-			else if (ob instanceof SpanObject)
-			{
+			} else if (ob instanceof SpanObject) {
 				Object span = ((SpanObject) ob).span;
-				if(span instanceof ImageSpan)
-				{
-					Rect r = ((ImageSpan)span).getDrawable().getBounds();
-					obWidth = r.right - r.left;
-					obHeight = r.bottom - r.top;
-					if (obHeight > lineHeight)
+				if (span instanceof DynamicDrawableSpan) {
+					int start = ((Spannable) text).getSpanStart(span);
+					int end = ((Spannable) text).getSpanEnd(span);
+					obWidth = ((DynamicDrawableSpan) span).getSize(getPaint(), text, start, end, mSpanFmInt);
+					obHeight = Math.abs(mSpanFmInt.top) + Math.abs(mSpanFmInt.bottom);
+					if (obHeight > lineHeight) {
 						lineHeight = obHeight;
-				}
-				else if(span instanceof BackgroundColorSpan)
-				{
+					}
+				} else if (span instanceof BackgroundColorSpan) {
 					String str = ((SpanObject) ob).source.toString();
 					obWidth = paint.measureText(str);
 					obHeight = textSize;
-					
+
 					//如果太长,拆分
-					int k= str.length()-1;
-					while(width - drawedWidth < obWidth)
-					{
-						obWidth = paint.measureText(str.substring(0,k--));
+					int k = str.length() - 1;
+					while (width - drawedWidth < obWidth) {
+						obWidth = paint.measureText(str.substring(0, k--));
 					}
-					if(k < str.length()-1)
-					{
+					if (k < str.length() - 1) {
 						splitFlag = true;
 						SpanObject so1 = new SpanObject();
 						so1.start = ((SpanObject) ob).start;
 						so1.end = so1.start + k;
-						so1.source = str.substring(0,k+1);
+						so1.source = str.substring(0, k + 1);
 						so1.span = ((SpanObject) ob).span;
-						
+
 						SpanObject so2 = new SpanObject();
-						so2.start =  so1.end;
+						so2.start = so1.end;
 						so2.end = ((SpanObject) ob).end;
-						so2.source = str.substring(k+1,str.length());
+						so2.source = str.substring(k + 1, str.length());
 						so2.span = ((SpanObject) ob).span;
-						
+
 						ob = so1;
-						obList.set(i,so2);
+						obList.set(i, so2);
 						i--;
 					}
 				}//做字符串处理
-				else
-				{
+				else {
 					String str = ((SpanObject) ob).source.toString();
 					obWidth = paint.measureText(str);
 					obHeight = textSize;
@@ -401,13 +384,11 @@ public class MTextView extends TextView
 			}
 
 			//这一行满了，存入contentList,新起一行
-			if (width - drawedWidth < obWidth || splitFlag)
-			{
+			if (width - drawedWidth < obWidth || splitFlag) {
 				splitFlag = false;
 				contentList.add(line);
 
-				if (drawedWidth > lineWidthMax)
-				{
+				if (drawedWidth > lineWidthMax) {
 					lineWidthMax = drawedWidth;
 				}
 				drawedWidth = 0;
@@ -420,8 +401,7 @@ public class MTextView extends TextView
 
 			drawedWidth += obWidth;
 
-			if (ob instanceof String && line.line.size() > 0 && (line.line.get(line.line.size() - 1) instanceof String))
-			{
+			if (ob instanceof String && line.line.size() > 0 && (line.line.get(line.line.size() - 1) instanceof String)) {
 				int size = line.line.size();
 				sb = new StringBuilder();
 				sb.append(line.line.get(size - 1));
@@ -432,28 +412,23 @@ public class MTextView extends TextView
 				line.widthList.set(size - 1, (int) obWidth);
 				line.height = (int) lineHeight;
 
-			}
-			else
-			{
+			} else {
 				line.line.add(ob);
 				line.widthList.add((int) obWidth);
 				line.height = (int) lineHeight;
 			}
 
 		}
-		
-		if (drawedWidth > lineWidthMax)
-		{
+
+		if (drawedWidth > lineWidthMax) {
 			lineWidthMax = drawedWidth;
 		}
-		
-		if (line != null && line.line.size() > 0)
-		{
+
+		if (line != null && line.line.size() > 0) {
 			contentList.add(line);
 			height += lineHeight + lineSpacing;
 		}
-		if (contentList.size() <= 1)
-		{
+		if (contentList.size() <= 1) {
 			oneLineWidth = (int) drawedWidth + leftPadding + rightPadding;
 			height = lineSpacing + lineHeight + lineSpacing;
 		}
@@ -464,43 +439,42 @@ public class MTextView extends TextView
 
 	/**
 	 * 获取缓存的测量数据，避免多次重复测量
+	 *
 	 * @param text
 	 * @param width
 	 * @return height
 	 */
 	@SuppressWarnings("unchecked")
-	private int getCachedData(String text, int width)
-	{
+	private int getCachedData(String text, int width) {
 		SoftReference<MeasuredData> cache = measuredData.get(text);
-		if (cache == null)
+		if (cache == null) {
 			return -1;
+		}
 		MeasuredData md = cache.get();
-		if (md != null && md.textSize == this.getTextSize() && width == md.width)
-		{
+		if (md != null && md.textSize == this.getTextSize() && width == md.width) {
 			lineWidthMax = md.lineWidthMax;
 			contentList = (ArrayList<LINE>) md.contentList.clone();
 			oneLineWidth = md.oneLineWidth;
 
 			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < contentList.size(); i++)
-			{
+			for (int i = 0; i < contentList.size(); i++) {
 				LINE line = contentList.get(i);
 				sb.append(line.toString());
 			}
 			return md.measuredHeight;
-		}
-		else
+		} else {
 			return -1;
+		}
 	}
 
 	/**
 	 * 缓存已测量的数据
+	 *
 	 * @param width
 	 * @param height
 	 */
 	@SuppressWarnings("unchecked")
-	private void cacheData(int width, int height)
-	{
+	private void cacheData(int width, int height) {
 		MeasuredData md = new MeasuredData();
 		md.contentList = (ArrayList<LINE>) contentList.clone();
 		md.textSize = this.getTextSize();
@@ -511,8 +485,7 @@ public class MTextView extends TextView
 		md.hashIndex = ++hashIndex;
 
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < contentList.size(); i++)
-		{
+		for (int i = 0; i < contentList.size(); i++) {
 			LINE line = contentList.get(i);
 			sb.append(line.toString());
 		}
@@ -523,83 +496,66 @@ public class MTextView extends TextView
 
 	/**
 	 * 用本函数代替{@link #setText(CharSequence)}
+	 *
 	 * @param cs
 	 */
-	public void setMText(CharSequence cs)
-	{
+	public void setMText(CharSequence cs) {
 		text = cs;
 
 		obList.clear();
 
-		ArrayList<SpanObject> isList = new ArrayList<MTextView.SpanObject>();
+		ArrayList<SpanObject> isList = new ArrayList<SpanObject>();
 		useDefault = false;
-		if (cs instanceof SpannableString)
-		{
-			SpannableString ss = (SpannableString) cs;
-			CharacterStyle[] spans = ss.getSpans(0, ss.length(), CharacterStyle.class);
-			for (int i = 0; i < spans.length; i++)
-			{
-				
-				int s = ss.getSpanStart(spans[i]);
-				int e = ss.getSpanEnd(spans[i]);
+
+		if (cs instanceof Spannable) {
+			CharacterStyle[] spans = ((Spannable) cs).getSpans(0, cs.length(), CharacterStyle.class);
+			for (int i = 0; i < spans.length; i++) {
+				int s = ((Spannable) cs).getSpanStart(spans[i]);
+				int e = ((Spannable) cs).getSpanEnd(spans[i]);
 				SpanObject iS = new SpanObject();
 				iS.span = spans[i];
 				iS.start = s;
 				iS.end = e;
-				iS.source = ss.subSequence(s, e);
+				iS.source = cs.subSequence(s, e);
 				isList.add(iS);
 			}
 		}
-		
+
 		//对span进行排序，以免不同种类的span位置错乱
 		SpanObject[] spanArray = new SpanObject[isList.size()];
 		isList.toArray(spanArray);
-		Arrays.sort(spanArray,0,spanArray.length,new SpanObjectComparator());
+		Arrays.sort(spanArray, 0, spanArray.length, new SpanObjectComparator());
 		isList.clear();
-		for(int i=0;i<spanArray.length;i++)
-		{
+		for (int i = 0; i < spanArray.length; i++) {
 			isList.add(spanArray[i]);
 		}
-		
+
 		String str = cs.toString();
 
-		for (int i = 0, j = 0; i < cs.length(); )
-		{
-			if (j < isList.size())
-			{
+		for (int i = 0, j = 0; i < cs.length(); ) {
+			if (j < isList.size()) {
 				SpanObject is = isList.get(j);
-				if (i < is.start)
-				{
+				if (i < is.start) {
 					Integer cp = str.codePointAt(i);
 					//支持增补字符
-					if (Character.isSupplementaryCodePoint(cp))
-					{
+					if (Character.isSupplementaryCodePoint(cp)) {
 						i += 2;
-					}
-					else
-					{
+					} else {
 						i++;
 					}
 
 					obList.add(new String(Character.toChars(cp)));
 
-				}
-				else if (i >= is.start)
-				{
+				} else if (i >= is.start) {
 					obList.add(is);
 					j++;
 					i = is.end;
 				}
-			}
-			else
-			{
+			} else {
 				Integer cp = str.codePointAt(i);
-				if (Character.isSupplementaryCodePoint(cp))
-				{
+				if (Character.isSupplementaryCodePoint(cp)) {
 					i += 2;
-				}
-				else
-				{
+				} else {
 					i++;
 				}
 
@@ -610,98 +566,88 @@ public class MTextView extends TextView
 		requestLayout();
 	}
 
-	public void setUseDefault(boolean useDefault)
-	{
+	public void setUseDefault(boolean useDefault) {
 		this.useDefault = useDefault;
-		if (useDefault)
-		{
+		if (useDefault) {
 			this.setText(text);
 			this.setTextColor(textColor);
 		}
 	}
-    /**
-     * 设置行距
-     * @param lineSpacingDP 行距，单位dp
-     */
-	public void setLineSpacingDP(int lineSpacingDP)
-	{
+
+	/**
+	 * 设置行距
+	 *
+	 * @param lineSpacingDP 行距，单位dp
+	 */
+	public void setLineSpacingDP(int lineSpacingDP) {
 		this.lineSpacingDP = lineSpacingDP;
 		lineSpacing = dip2px(context, lineSpacingDP);
 	}
+
 	/**
 	 * 获取行距
+	 *
 	 * @return 行距，单位dp
 	 */
-	public int getLineSpacingDP()
-	{
+	public int getLineSpacingDP() {
 		return lineSpacingDP;
 	}
+
 	/**
 	 * @author huangwei
-	 * @version SocialClient 1.2.0
 	 * @功能: 存储Span对象及相关信息
 	 * @2014年5月27日
 	 * @下午5:21:37
 	 */
-	class SpanObject
-	{
+	class SpanObject {
 		public Object span;
 		public int start;
 		public int end;
 		public CharSequence source;
 	}
-    /**
-     * @功能: 对SpanObject进行排序
-     * @author huangwei
-     * @2014年6月4日
-     * @下午5:21:30
-     * @version SocialClient 1.2.0
-     */
-	class SpanObjectComparator implements Comparator<SpanObject>
-	{
-		@Override
-		public int compare(SpanObject lhs, SpanObject rhs)
-		{
-			
-			return lhs.start - rhs.start;
-		}
-		
-	}
+
 	/**
 	 * @author huangwei
-	 * @version SocialClient 1.2.0
+	 * @功能: 对SpanObject进行排序
+	 * @2014年6月4日
+	 * @下午5:21:30
+	 */
+	class SpanObjectComparator implements Comparator<SpanObject> {
+		@Override
+		public int compare(SpanObject lhs, SpanObject rhs) {
+
+			return lhs.start - rhs.start;
+		}
+	}
+
+	/**
+	 * @author huangwei
 	 * @功能: 存储测量好的一行数据
 	 * @2014年5月27日
 	 * @下午5:22:12
 	 */
-	class LINE
-	{
+	class LINE {
 		public ArrayList<Object> line = new ArrayList<Object>();
 		public ArrayList<Integer> widthList = new ArrayList<Integer>();
 		public int height;
 
 		@Override
-		public String toString()
-		{
+		public String toString() {
 			StringBuilder sb = new StringBuilder("height:" + height + "   ");
-			for (int i = 0; i < line.size(); i++)
-			{
+			for (int i = 0; i < line.size(); i++) {
 				sb.append(line.get(i) + ":" + widthList.get(i));
 			}
 			return sb.toString();
 		}
-
 	}
 
 	/**
 	 * @author huangwei
-	 * @version SocialClient 1.2.0
 	 * @功能: 缓存的数据
 	 * @2014年5月27日
 	 * @下午5:22:25
 	 */
-	class MeasuredData
-	{
+	class MeasuredData {
 		public int measuredHeight;
 		public float textSize;
 		public int width;
@@ -709,7 +655,5 @@ public class MTextView extends TextView
 		public int oneLineWidth;
 		public int hashIndex;
 		ArrayList<LINE> contentList;
-
 	}
-
 }
