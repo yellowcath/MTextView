@@ -319,7 +319,7 @@ public class MTextView extends TextView
 
 		float drawedWidth = 0;
 
-		boolean splitFlag = false;//BackgroundColorSpan拆分用
+		boolean splitFlag = false;//BackgroundColorSpan拆分用,也做遇到换行符时提前换行用
 
 		width = width - leftPadding - rightPadding;
 
@@ -337,6 +337,9 @@ public class MTextView extends TextView
 			if (ob instanceof String) {
 				obWidth = paint.measureText((String) ob);
 				obHeight = textSize;
+				if("\n".equals(ob)){ //遇到"\n"则换行
+					splitFlag = true;
+				}
 			} else if (ob instanceof SpanObject) {
 				Object span = ((SpanObject) ob).span;
 				if (span instanceof DynamicDrawableSpan) {
